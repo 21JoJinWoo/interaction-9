@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>재미있는 웹사이트 소개</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbit&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --card-width: 320px;
+            --card-height: 220px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Orbit', sans-serif;
+            background-color: #121212;
+            color: #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding-bottom: 2rem;
+            overflow: hidden;
+            perspective: 2000px;
+        }
+
+        .carousel-wrapper {
+            position: relative;
+            width: var(--card-width);
+            height: var(--card-height);
+            margin-top: 5rem;
+            margin-bottom: 3rem;
+        }
+
+        .card-container {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            transform-style: preserve-3d;
+            transition: transform 0.6s cubic-bezier(0.77, 0, 0.175, 1);
+            cursor: grab;
+        }
+
+        .card {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: var(--card-width);
+            height: var(--card-height);
+            background-color: #1e1e1e;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+            border: 1px solid #333;
+            transition: box-shadow 0.3s ease, border-color 0.3s ease;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+        }
+
+        .card:hover {
+            box-shadow: 0 0 25px 8px rgba(0, 255, 255, 0.6); /* 형광색 빛 효과 */
+            border-color: #00ffff; /* 형광색 테두리 */
+            z-index: 10;
+        }
+
+        .card h2 {
+            font-size: 1.6rem;
+            color: #ffffff;
+        }
+
+        .description-area {
+            background-color: #2a2a2a;
+            color: #f0f0f0;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            padding: 30px;
+            width: 100%;
+            max-width: 800px;
+            min-height: 120px;
+            margin-top: 2rem;
+            text-align: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.1rem;
+            line-height: 1.8;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(20px);
+            transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out, visibility 0.3s;
+        }
+        
+        .description-area p {
+            margin: 0;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="carousel-wrapper" id="carouselWrapper">
+        <div class="card-container" id="cardContainer">
+            <div class="card" data-href="https://longdogechallenge.com/" data-description="스크롤을 내릴수록 강아지의 몸이 끝없이 길어지는 유머러스한 무한 스크롤 사이트입니다.">
+                <h2>Long Doge Challenge</h2>
+            </div>
+
+            <div class="card" data-href="https://neal.fun/deep-sea/" data-description="스크롤을 통해 해수면부터 심해까지 탐험하며 다양한 해양 생물들을 만날 수 있는 인터랙티브 인포그래픽입니다.">
+                <h2>The Deep Sea</h2>
+            </div>
+
+            <div class="card" data-href="https://patatap.com/" data-description="키보드를 누를 때마다 독특한 사운드와 화려한 시각 효과가 나타나는 인터랙티브 사운드보드입니다.">
+                <h2>Patatap</h2>
+            </div>
+
+            <div class="card" data-href="https://findtheinvisiblecow.com/" data-description="마우스 커서의 위치에 따라 소리가 커지는 것을 이용해 화면 어딘가에 숨어있는 보이지 않는 소를 찾는 게임입니다.">
+                <h2>Find the Invisible Cow</h2>
+            </div>
+
+            <div class="card" data-href="https://mondrianandme.com/" data-description="몬드리안의 추상화 작품에 직접 색을 채워보며 자신만의 작품을 만들 수 있는 인터랙티브 아트 사이트입니다.">
+                <h2>Mondrian and Me</h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="description-area" id="descriptionArea">
+    </div>
+
+    <script>
+        const cardContainer = document.getElementById('cardContainer');
+        const carouselWrapper = document.getElementById('carouselWrapper');
+        const descriptionArea = document.getElementById('descriptionArea');
+        const cards = document.querySelectorAll('.card');
+        const cardCount = cards.length;
+        const anglePerCard = 360 / cardCount;
+        
+        let currentRotation = 0;
+        let isDragging = false;
+        let startPos = 0;
+        let prevDeltaX = 0;
+
+        function var_to_px(variable) {
+            return parseFloat(getComputedStyle(document.documentElement).getPropertyValue(variable));
+        }
+        
+        const cardWidth = var_to_px('--card-width') || 320;
+        const radius = (cardWidth / 2) / Math.tan(Math.PI / cardCount) + 50;
+
+        function setupCarousel() {
+            cards.forEach((card, index) => {
+                const angle = anglePerCard * index;
+                card.style.transform = `rotateY(${angle}deg) translateZ(${radius}px)`;
+
+                card.addEventListener('click', () => {
+                    if (isDragging && prevDeltaX !== 0) return;
+                    const href = card.getAttribute('data-href');
+                    if (href) {
+                        window.open(href, '_blank');
+                    }
+                });
+
+                card.addEventListener('mouseenter', () => {
+                    if (isDragging) return;
+                    
+                    const description = card.getAttribute('data-description');
+                    descriptionArea.innerHTML = `<p>${description}</p>`;
+                    descriptionArea.style.opacity = '1';
+                    descriptionArea.style.visibility = 'visible';
+                    descriptionArea.style.transform = 'translateY(0)';
+                    
+                    const targetRotation = -(anglePerCard * index);
+                    currentRotation = targetRotation;
+                    cardContainer.style.transition = 'transform 0.6s cubic-bezier(0.77, 0, 0.175, 1)';
+                    cardContainer.style.transform = `rotateY(${currentRotation}deg)`;
+                });
+
+                card.addEventListener('mouseleave', () => {
+                    descriptionArea.style.opacity = '0';
+                    descriptionArea.style.visibility = 'hidden';
+                    descriptionArea.style.transform = 'translateY(20px)';
+                });
+            });
+        }
+
+        function updateRotation(deltaX) {
+            currentRotation -= deltaX * 0.25;
+            cardContainer.style.transition = 'none';
+            cardContainer.style.transform = `rotateY(${currentRotation}deg)`;
+        }
+
+        function snapToClosestCard() {
+            cardContainer.style.transition = 'transform 0.6s cubic-bezier(0.77, 0, 0.175, 1)';
+            const snapIndex = Math.round(currentRotation / anglePerCard);
+            currentRotation = snapIndex * anglePerCard;
+            cardContainer.style.transform = `rotateY(${currentRotation}deg)`;
+        }
+
+        carouselWrapper.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            startPos = e.clientX;
+            prevDeltaX = 0;
+            cardContainer.style.cursor = 'grabbing';
+        });
+
+        carouselWrapper.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            const deltaX = e.clientX - startPos;
+            prevDeltaX = deltaX;
+            startPos = e.clientX;
+            updateRotation(deltaX);
+        });
+
+        carouselWrapper.addEventListener('mouseup', () => {
+            if (!isDragging) return;
+            isDragging = false;
+            cardContainer.style.cursor = 'grab';
+            snapToClosestCard();
+            setTimeout(() => { prevDeltaX = 0; }, 100);
+        });
+
+        carouselWrapper.addEventListener('mouseleave', () => {
+            if (!isDragging) return;
+            isDragging = false;
+            cardContainer.style.cursor = 'grab';
+            snapToClosestCard();
+            setTimeout(() => { prevDeltaX = 0; }, 100);
+        });
+
+        carouselWrapper.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const deltaY = e.deltaY > 0 ? 1 : -1;
+            const deltaRotation = deltaY * anglePerCard * 0.2;
+            
+            currentRotation -= deltaRotation * 2;
+            cardContainer.style.transition = 'transform 0.3s ease-out';
+            cardContainer.style.transform = `rotateY(${currentRotation}deg)`;
+            
+            clearTimeout(window.wheelTimeout);
+            window.wheelTimeout = setTimeout(snapToClosestCard, 200);
+        });
+
+        setupCarousel();
+    </script>
+
+</body>
+</html>
